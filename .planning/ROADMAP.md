@@ -30,7 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User can target WordPress, Shopify, or both before running discovery.
   3. User can start a discovery run and receive candidate public business domains.
   4. User can monitor discovery progress and total discovered domains while the run is active.
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 01-01-PLAN.md - Bootstrap contracts, persistence schema, and quality gate foundation
+- [ ] 01-02-PLAN.md - Implement async discovery run lifecycle APIs, worker pipeline, and SSE progress
+- [ ] 01-03-PLAN.md - Deliver discovery UI flow with live run monitoring and end-to-end coverage
 **UI hint**: yes
 
 ### Phase 2: Lightweight Scan Execution
