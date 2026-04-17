@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DiscoveryRunStatus {
+  queued
+  running
+  completed
+  aborted
+}
+
+model DiscoveryRun {
+  id              String             @id @default(cuid())
+  keyword         String
+  country         String
+  city            String?
+  language        String?
+  platform        String
+  status          DiscoveryRunStatus @default(queued)
+  discoveredCount Int                @default(0)
+  createdAt       DateTime           @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  stoppedAt       DateTime?
+  stopReason      String?
+  candidates      DiscoveryCandidate[]
+
+  @@index([status, createdAt])
+}
+
+model DiscoveryCandidate {
+  id              String   @id @default(cuid())
+  runId           String
+  domain          String
+  canonicalDomain String
+  domainKey       String
+  platform        String
+  score           Float
+  source          String
+  createdAt       DateTime @default(now())
+  run             DiscoveryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, domainKey])
+  @@index([canonicalDomain])
+}
