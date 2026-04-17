@@ -74,37 +74,38 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DISC-01 | TBD | Pending |
-| DISC-02 | TBD | Pending |
-| DISC-03 | TBD | Pending |
-| DISC-04 | TBD | Pending |
-| SCAN-01 | TBD | Pending |
-| SCAN-02 | TBD | Pending |
-| SCAN-03 | TBD | Pending |
-| SIG-01 | TBD | Pending |
-| SIG-02 | TBD | Pending |
-| SIG-03 | TBD | Pending |
-| SIG-04 | TBD | Pending |
-| SCORE-01 | TBD | Pending |
-| SCORE-02 | TBD | Pending |
-| SCORE-03 | TBD | Pending |
-| LEAD-01 | TBD | Pending |
-| LEAD-02 | TBD | Pending |
-| LEAD-03 | TBD | Pending |
-| LEAD-04 | TBD | Pending |
-| OUTR-01 | TBD | Pending |
-| OUTR-02 | TBD | Pending |
-| OUTR-03 | TBD | Pending |
-| OUTR-04 | TBD | Pending |
-| EXPT-01 | TBD | Pending |
-| EXPT-02 | TBD | Pending |
-| EXPT-03 | TBD | Pending |
+| DISC-01 | Phase 1 | Pending |
+| DISC-02 | Phase 1 | Pending |
+| DISC-03 | Phase 1 | Pending |
+| DISC-04 | Phase 1 | Pending |
+| SCAN-01 | Phase 2 | Pending |
+| SCAN-02 | Phase 2 | Pending |
+| SCAN-03 | Phase 2 | Pending |
+| SIG-01 | Phase 3 | Pending |
+| SIG-02 | Phase 3 | Pending |
+| SIG-03 | Phase 3 | Pending |
+| SIG-04 | Phase 3 | Pending |
+| SCORE-01 | Phase 4 | Pending |
+| SCORE-02 | Phase 4 | Pending |
+| SCORE-03 | Phase 4 | Pending |
+| LEAD-01 | Phase 5 | Pending |
+| LEAD-02 | Phase 5 | Pending |
+| LEAD-03 | Phase 5 | Pending |
+| LEAD-04 | Phase 5 | Pending |
+| OUTR-01 | Phase 6 | Pending |
+| OUTR-02 | Phase 6 | Pending |
+| OUTR-03 | Phase 6 | Pending |
+| OUTR-04 | Phase 6 | Pending |
+| EXPT-01 | Phase 6 | Pending |
+| EXPT-02 | Phase 6 | Pending |
+| EXPT-03 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 25 total
-- Mapped to phases: 0
-- Unmapped: 25 ⚠
+- Mapped to phases: 25
+- Unmapped: 0
+- Coverage status: 100% mapped
 
 ---
 *Requirements defined: 2026-04-17*
-*Last updated: 2026-04-17 after initial definition*
+*Last updated: 2026-04-17 after roadmap mapping*
