@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JobStatus {
+  pending
+  running
+  done
+  failed
+}
+
+enum TargetPlatform {
+  shopify
+  wordpress
+  both
+  any
+}
+
+enum LeadStatus {
+  new
+  to_contact
+  contacted
+  not_relevant
+  closed
+}
+
+enum PageType {
+  home
+  contact
+  about
+  blog_index
+  collection
+  product
+  service
+  other
+}
+
+model SearchJob {
+  id             String         @id @default(cuid())
+  keyword        String?
+  niche          String?
+  country        String
+  city           String?
+  language       String
+  targetPlatform TargetPlatform @default(any)
+  businessType   String?
+  maxResults     Int            @default(30)
+  filters        Json?
+  status         JobStatus      @default(pending)
+  errorMessage   String?
+  discoveredCount Int           @default(0)
+  scannedCount   Int            @default(0)
+  scoredCount    Int            @default(0)
+  createdAt      DateTime       @default(now())
+  startedAt      DateTime?
+  finishedAt     DateTime?
+
+  leads          Lead[]
+
+  @@index([status, createdAt])
+}
+
+model Lead {
+  id                    String      @id @default(cuid())
+  searchJobId           String
+  searchJob             SearchJob   @relation(fields: [searchJobId], references: [id], onDelete: Cascade)
+
+  companyName           String?
+  domain                String
+  normalizedDomain      String      @unique
+  sourceUrl             String?
+  sourceType            String?
+  country               String?
+  city                  String?
+  language              String?
+  niche                 String?
+  businessType          String?
+
+  cms                   String?
+  ecommercePlatform     String?
+  hasBlog               Boolean     @default(false)
+  hasContactPage        Boolean     @default(false)
+  publicEmail           String?
+  publicPhone           String?
+  hasForm               Boolean     @default(false)
+  socialLinks           Json?
+
+  seoSignals            Json?
+  analyticsPresent      Boolean     @default(false)
+  tagManagerPresent     Boolean     @default(false)
+  performanceEstimate   Int?
+  siteQualityNotes      Json?
+
+  fitScore              Int         @default(0)
+  opportunityScore      Int         @default(0)
+  commercialScore       Int         @default(0)
+  contactabilityScore   Int         @default(0)
+  totalScore            Int         @default(0)
+  scoreReasons          Json?
+
+  status                LeadStatus  @default(new)
+  userNotes             String?
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  lastScannedAt         DateTime?
+
+  scans                 ScanResult[]
+  outreach              OutreachDraft[]
+
+  @@index([searchJobId])
+  @@index([totalScore])
+  @@index([status])
+}
+
+model ScanResult {
+  id               String    @id @default(cuid())
+  leadId           String
+  lead             Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  scannedUrl       String
+  pageType         PageType  @default(other)
+  httpStatus       Int?
+  title            String?
+  metaDescription  String?
+  h1               String?
+  canonical        String?
+  robotsMeta       String?
+  structuredData   Json?
+  notes            Json?
+  scannedAt        DateTime  @default(now())
+
+  @@index([leadId])
+}
+
+model OutreachDraft {
+  id               String    @id @default(cuid())
+  leadId           String
+  lead             Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  hook             String
+  miniAudit        String
+  suggestedOffer   String
+  emailDraft       String
+  linkedinDraft    String
+  model            String
+  promptVersion    String
+  createdAt        DateTime  @default(now())
+
+  @@index([leadId])
+}

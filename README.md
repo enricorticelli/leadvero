@@ -1,160 +1,124 @@
 # Leadvero
 
-Leadvero is a lead discovery and qualification tool for freelancers and small agencies that sell SEO, WordPress, and Shopify services.
+Lead discovery and qualification tool for freelancers selling SEO, WordPress, and Shopify services.
 
-Instead of building a giant list of random companies, Leadvero focuses on finding businesses that are actually worth contacting. It discovers public websites, scans lightweight on-page and technical signals, scores each lead, and generates outreach angles you can use for email or LinkedIn.
+Leadvero compresses the manual prospecting workflow (search → open site → inspect CMS → check SEO → write message) into a repeatable system: enter a niche and location, get a scored shortlist of companies worth contacting, with AI-generated outreach drafts in Italian.
 
-## Why this exists
+## Setup
 
-Finding new clients manually is slow.
+### Prerequisites
 
-A typical workflow looks like this:
-- search Google or directories
-- open each site one by one
-- check whether it uses WordPress or Shopify
-- look for SEO or UX issues
-- decide whether the company is a fit
-- write a custom outreach message
+- Node.js 20+
+- Docker (for Postgres)
+- SerpAPI account ([serpapi.com](https://serpapi.com)) — free tier: 100 searches/month
+- Anthropic API key ([console.anthropic.com](https://console.anthropic.com))
 
-Prospect Finder compresses that workflow into a repeatable system.
+### First-time setup
 
-## What it does
+```bash
+# 1. Install dependencies
+npm install
 
-Prospect Finder helps you:
+# 2. Configure environment
+cp .env.example .env
+# Fill in SERPAPI_KEY and ANTHROPIC_API_KEY (DATABASE_URL is pre-filled for docker)
+```
 
-- discover potential clients from public web sources
-- detect whether a site uses WordPress, Shopify, or another stack
-- identify basic SEO, content, and site quality gaps
-- score leads based on fit and opportunity
-- surface public contact information when available
-- generate a short outreach hook and suggested offer
+### Run everything with one command
 
-## Ideal users
+```bash
+npm run dev:up
+```
 
-- SEO freelancers
-- WordPress developers
-- Shopify developers
-- CRO / tracking / performance consultants
-- small web agencies doing outbound prospecting
+This single command:
+1. Starts Postgres via `docker compose up -d`
+2. Waits until Postgres accepts connections
+3. Syncs the database schema (`prisma db push`)
+4. Seeds 3 fixture leads if the DB is empty
+5. Starts Next.js dev server at [http://localhost:3000](http://localhost:3000)
+6. Starts the background job worker
 
-## Core use cases
+Stop with `Ctrl+C`.
 
-### 1. Find Shopify stores with weak SEO
-Search by niche, country, and language, then identify stores with issues like poor collection page optimization, weak metadata, or missing content structure.
+### Manual startup (alternative)
 
-### 2. Find WordPress sites that need redesign or optimization
-Search local businesses or niche businesses and detect signals such as outdated design, weak SEO setup, missing tracking, or poor technical quality.
+```bash
+docker compose up -d
+npm run db:push       # sync schema (idempotent)
+npm run db:seed       # optional fixture data
+npm run dev           # Next.js
+npm run worker        # job worker (second terminal)
+```
 
-### 3. Generate personalized outreach
-For each lead, get:
-- a reason to contact them
-- a suggested service angle
-- a first-draft email or LinkedIn message
+## Usage
 
-## Product principles
+1. Open [http://localhost:3000](http://localhost:3000)
+2. Fill in the search form (niche, city, platform target)
+3. Click **Lancia ricerca** — the worker picks up the job in the background
+4. Watch progress on the status page — redirects to lead list when done
+5. Browse `/leads`, filter by score / CMS / email availability
+6. Click a lead → generate AI outreach → mark status → export CSV
 
-Prospect Finder is designed around a few rules:
+## Project structure
 
-- quality over quantity
-- public data over private data
-- lightweight scans over aggressive crawling
-- lead qualification over mass scraping
-- human review before outreach
+```
+src/
+  app/                   Next.js App Router pages + API routes
+    api/searches/        POST create search job, GET list/status
+    api/leads/           GET list with filters, GET detail, POST status, POST outreach, GET export CSV
+    page.tsx             Search form
+    searches/[id]/       Job progress page
+    leads/               Lead list with filters
+    leads/[id]/          Lead detail + outreach generator
+  server/
+    discovery/           SerpAPI client, query builder, domain normalizer
+    crawl/               Fetcher, parser, CMS/SEO/contact/quality detectors, site-scan orchestrator
+    scoring/             Fit, opportunity, commercial, contactability — configurable weights
+    outreach/            Claude API wrapper + prompt-cached generator
+    jobs/                Runner (per-job logic) + worker (polling loop)
+    db/                  Prisma singleton
+    env.ts               Zod-validated env
+prisma/
+  schema.prisma          SearchJob · Lead · ScanResult · OutreachDraft
+tests/
+  discovery/             normalize, query-builder, discover orchestrator
+  crawl/detect/          cms, seo, contact, quality
+  scoring/               fit, opportunity, contactability, aggregate
+  outreach/              Claude contract test (mocked)
+```
 
-This is not meant to be a spam engine or a giant scraped database.
+## Scoring model
 
-## MVP scope
+Each lead receives a score 0–100 weighted as:
 
-The MVP includes:
+| Component | Weight | What it measures |
+|---|---|---|
+| Fit | 30% | CMS match, language, country |
+| Opportunity | 35% | Missing/weak SEO signals |
+| Commercial | 20% | Signs of an active real business |
+| Contactability | 15% | Email, phone, form, contact page |
 
-- search input by niche / keyword / geography
-- discovery of public company domains
-- lightweight site scan
-- WordPress / Shopify detection
-- basic SEO and technical signal extraction
-- lead scoring
-- lead list dashboard
-- lead detail view
-- CSV export
-- AI-assisted outreach draft generation
+Weights are editable in [src/server/scoring/config.ts](src/server/scoring/config.ts).
 
-The MVP does not include:
+## Development
 
-- automatic mass email sending
-- full CRM replacement
-- deep crawling of entire websites
-- scraping private or gated platforms
-- enrichment from expensive third-party providers
+```bash
+npm test          # run all 45 unit tests
+npm run typecheck # TypeScript check
+npm run lint      # ESLint
+npm run db:studio # Prisma Studio (visual DB browser)
+```
 
-## How it works
+## Environment variables
 
-### Step 1: Discovery
-The user enters search criteria such as:
-- niche
-- keyword
-- country
-- city
-- language
-- target platform (WordPress / Shopify / both)
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | Postgres connection string |
+| `SERPAPI_KEY` | Yes | SerpAPI key for Google search |
+| `ANTHROPIC_API_KEY` | Yes | Anthropic key for outreach generation |
+| `ANTHROPIC_MODEL` | No | Default: `claude-sonnet-4-6` |
+| `LEADVERO_USER_AGENT` | No | Crawler User-Agent string |
 
-The system gathers candidate domains from public sources.
+## Compliance notes
 
-### Step 2: Site scan
-Each domain is scanned lightly across relevant public pages such as:
-- homepage
-- contact page
-- about page
-- blog index
-- category / collection pages for ecommerce
-- a small number of product or service pages
-
-### Step 3: Signal extraction
-The tool extracts signals such as:
-- CMS / ecommerce platform
-- title tag
-- meta description
-- H1 presence
-- sitemap and robots presence
-- schema detection
-- blog presence
-- analytics / tag manager presence
-- contact page / form / public email
-- basic site quality and opportunity signals
-
-### Step 4: Scoring
-Each lead receives a score from 0 to 100 based on:
-- fit
-- opportunity
-- commercial potential
-- contactability
-
-### Step 5: Outreach assistance
-The tool generates:
-- a short personalized hook
-- a mini audit summary
-- a suggested offer
-- a draft outreach message
-
-## Example lead output
-
-```json
-{
-  "company_name": "Example Store",
-  "domain": "examplestore.com",
-  "cms": "Shopify",
-  "country": "Italy",
-  "has_blog": false,
-  "public_email": "info@examplestore.com",
-  "fit_score": 28,
-  "opportunity_score": 31,
-  "commercial_score": 16,
-  "contactability_score": 12,
-  "total_score": 87,
-  "opportunity_notes": [
-    "Collection pages appear weakly optimized",
-    "No visible blog/content layer",
-    "Missing or weak metadata on key pages"
-  ],
-  "outreach_hook": "I noticed your store has strong products, but category pages may not be capturing organic search demand well.",
-  "suggested_offer": "Shopify SEO audit + collection page optimization + internal linking improvements"
-}
+Leadvero crawls only publicly accessible pages, respects `robots.txt`, applies a 1 req/sec per-host rate limit, and caps body reads at 2MB. It does not bypass login walls, gated content, or platform ToS restrictions. The user is responsible for outreach compliance with applicable regulations (GDPR, CAN-SPAM, etc.).

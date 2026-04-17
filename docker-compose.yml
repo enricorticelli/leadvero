@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: leadvero-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: leadvero
+      POSTGRES_PASSWORD: leadvero
+      POSTGRES_DB: leadvero
+    ports:
+      - "5432:5432"
+    volumes:
+      - leadvero-pgdata:/var/lib/postgresql/data
+
+volumes:
+  leadvero-pgdata:
