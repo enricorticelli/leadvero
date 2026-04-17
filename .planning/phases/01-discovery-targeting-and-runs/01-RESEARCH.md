@@ -297,17 +297,15 @@ if (!result.success) {
 | A4 | Blended source mix should start with OSM-derived connectors plus optional web-search style connectors | Architecture Patterns | Source yield may be insufficient for some niches/regions. |
 | A5 | SSE is sufficient for run progress UX in this phase without WebSockets | Summary, Code Examples | Some edge clients/proxies may require fallback polling behavior. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Which exact public providers make up the initial blended source set?**
-   - What we know: Context locks the UI to a blended internal source model with no per-source toggles. [VERIFIED: .planning/phases/01-discovery-targeting-and-runs/01-CONTEXT.md]
-   - What's unclear: The concrete provider list and quota/rate profile for each region/niche.
-   - Recommendation: Decide 2-3 providers in planning and define per-provider quality weights + failover order.
+1. **Initial blended provider set**
+   - **Decision:** Phase 1 baseline provider mix is fixed to a blended internal set of three adapters: (a) OSM Nominatim `/search`, (b) OSM Overpass website extraction queries, and (c) a generic web-search adapter; the UI exposes no per-source controls per D-03.
+   - **Execution implication:** Provider adapters must normalize to one internal candidate contract and apply deterministic relevance weights (`web-search` high confidence, `nominatim` medium, `overpass` medium-low) before quality-gate filtering.
 
-2. **How strict should platform prefiltering be in Phase 1?**
-   - What we know: User must choose WordPress, Shopify, or both before run start. [VERIFIED: .planning/REQUIREMENTS.md]
-   - What's unclear: Minimum acceptable precision/recall for prefiltering before Phase 3 detection.
-   - Recommendation: Plan measurable threshold and fallback labeling strategy (`unknown`) to avoid hard false exclusions.
+2. **Platform prefilter strictness**
+   - **Decision:** For `platform=wordpress` or `platform=shopify`, accept only positive platform fingerprint matches at Phase 1 intake; for `platform=both`, accept positive matches for either plus `unknown` candidates with a relevance penalty (never a boost).
+   - **Execution implication:** Filtering remains quality-first (D-04), avoids false inclusion for single-platform runs, and still allows discovery breadth when user explicitly chooses `both`.
 
 ## Environment Availability
 

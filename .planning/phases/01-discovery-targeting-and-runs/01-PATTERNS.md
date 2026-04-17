@@ -1,8 +1,8 @@
 # Phase 01: discovery-targeting-and-runs - Pattern Map
 
 **Mapped:** 2026-04-17  
-**Files analyzed:** 25  
-**Analogs found:** 0 / 25
+**Files analyzed:** 24 planned files + 1 explicit exclusion  
+**Analogs found:** 0 / 24 planned files
 
 ## File Classification
 
@@ -24,15 +24,18 @@
 | `src/server/queue/worker.ts` | service | event-driven | None in repo | none |
 | `src/server/db/repositories/discovery-runs.repository.ts` | model | CRUD | None in repo | none |
 | `src/server/db/repositories/discovery-candidates.repository.ts` | model | CRUD | None in repo | none |
-| `src/server/db/schema/schema.prisma` | migration | CRUD | None in repo | none |
+| `prisma/schema.prisma` | migration | CRUD | None in repo | none |
 | `package.json` | config | batch | None in repo | none |
 | `vitest.config.ts` | config | batch | None in repo | none |
-| `playwright.config.ts` | config | batch | None in repo | none |
 | `tests/discovery/input-schema.test.ts` | test | transform | None in repo | none |
 | `tests/discovery/platform-filter.test.ts` | test | transform | None in repo | none |
 | `tests/api/discovery-runs.start.test.ts` | test | request-response | None in repo | none |
 | `tests/api/discovery-runs.progress.test.ts` | test | streaming | None in repo | none |
 | `tests/api/discovery-runs.stop.test.ts` | test | request-response | None in repo | none |
+
+## Explicit Exclusions
+
+- `playwright.config.ts` is intentionally excluded from Phase 01 plan file targets. `tests/e2e/discovery-flow.spec.ts` runs with Playwright defaults; add a config file only if execution reveals concrete overrides (e.g., baseURL/projects/retries) are required.
 
 ## Pattern Assignments
 
@@ -179,7 +182,7 @@ return parsed.domain ?? null;
 
 ## No Analog Found
 
-All 25 classified files currently have no in-repo code analog because the repository has no implementation source files yet (only planning/docs artifacts).
+All 24 planned files currently have no in-repo code analog because the repository has no implementation source files yet (only planning/docs artifacts).
 
 Planner should use:
 1. The fallback snippets above (from `01-RESEARCH.md`).

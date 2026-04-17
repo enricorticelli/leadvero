@@ -30,11 +30,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User can target WordPress, Shopify, or both before running discovery.
   3. User can start a discovery run and receive candidate public business domains.
   4. User can monitor discovery progress and total discovered domains while the run is active.
-**Plans**: 3 plans
+**Plans**: 5 plans
 Plans:
-- [ ] 01-01-PLAN.md - Bootstrap contracts, persistence schema, and quality gate foundation
-- [ ] 01-02-PLAN.md - Implement async discovery run lifecycle APIs, worker pipeline, and SSE progress
-- [ ] 01-03-PLAN.md - Deliver discovery UI flow with live run monitoring and end-to-end coverage
+- [ ] 01-01-PLAN.md - Bootstrap app/testing baseline with discovery contracts and quality-gate logic
+- [ ] 01-02-PLAN.md - Implement blended provider intake plus async run start/stop lifecycle APIs
+- [ ] 01-03-PLAN.md - Deliver discovery UI flow with fast smoke checks and phase-gate E2E coverage
+- [ ] 01-04-PLAN.md - Isolate run/candidate persistence contracts and lifecycle repositories
+- [ ] 01-05-PLAN.md - Implement durable SSE progress stream and progress integration tests
 **UI hint**: yes
 
 ### Phase 2: Lightweight Scan Execution
@@ -103,7 +105,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Discovery Targeting and Runs | 0/TBD | Not started | - |
+| 1. Discovery Targeting and Runs | 0/5 | Not started | - |
 | 2. Lightweight Scan Execution | 0/TBD | Not started | - |
 | 3. Signal Extraction and Opportunity Notes | 0/TBD | Not started | - |
 | 4. Scoring and Prioritization | 0/TBD | Not started | - |
