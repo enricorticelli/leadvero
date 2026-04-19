@@ -6,18 +6,14 @@ import {
   Mail,
   Phone,
   Trash2,
-  Sparkles,
   Globe,
   FileText,
-  Wand2,
   LayoutGrid,
   Search,
   Server,
-  MessageSquare,
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  Copy,
   ChevronDown,
   Check,
   HelpCircle,
@@ -30,6 +26,7 @@ import { Field, Select, Textarea } from "@/components/ui/Input";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { Tabs } from "@/components/ui/Tabs";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { DeepAnalysisPanel } from "@/components/leads/DeepAnalysisPanel";
 import {
   analyzeLead,
   type Insight,
@@ -51,18 +48,6 @@ interface ScanResult {
   structuredData: Record<string, unknown> | null;
   notes: Record<string, unknown> | null;
   scannedAt: string;
-}
-
-interface OutreachDraft {
-  id: string;
-  hook: string;
-  miniAudit: string;
-  suggestedOffer: string;
-  emailDraft: string;
-  linkedinDraft: string;
-  model: string;
-  promptVersion: string;
-  createdAt: string;
 }
 
 interface Lead {
@@ -99,7 +84,6 @@ interface Lead {
   updatedAt: string;
   lastScannedAt: string | null;
   scans: ScanResult[];
-  outreach: OutreachDraft[];
 }
 
 const STATUS_OPTIONS = [
@@ -166,7 +150,7 @@ const CONTACT_POINTS = {
   socials: 8,
 } as const;
 
-type TabId = "overview" | "seo" | "tech" | "contacts" | "outreach";
+type TabId = "overview" | "seo" | "tech" | "contacts" | "deep_analysis";
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
@@ -184,7 +168,6 @@ export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [lead, setLead] = useState<Lead | null>(null);
-  const [generating, setGenerating] = useState(false);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("");
   const [savedNotes, setSavedNotes] = useState("");
@@ -206,16 +189,6 @@ export default function LeadDetailPage() {
         setSavedStatus(d.status);
       });
   }, [id]);
-
-  async function generateOutreach() {
-    setGenerating(true);
-    const res = await fetch(`/api/leads/${id}/outreach`, { method: "POST" });
-    if (res.ok) {
-      const draft = (await res.json()) as OutreachDraft;
-      setLead((l) => (l ? { ...l, outreach: [draft, ...l.outreach] } : l));
-    }
-    setGenerating(false);
-  }
 
   async function deleteLead() {
     const ok = await confirm({
@@ -258,14 +231,12 @@ export default function LeadDetailPage() {
     );
   }
 
-  const outreachBadge = lead.outreach.length > 0 ? lead.outreach.length : undefined;
-
   const TAB_ITEMS = [
     { id: "overview" as const, label: "Panoramica", icon: LayoutGrid },
     { id: "seo" as const, label: "SEO", icon: Search },
     { id: "tech" as const, label: "Sito & tecnologia", icon: Server },
     { id: "contacts" as const, label: "Contatti", icon: Mail },
-    { id: "outreach" as const, label: "Outreach AI", icon: MessageSquare, badge: outreachBadge },
+    { id: "deep_analysis" as const, label: "Analisi approfondita", icon: FileText },
   ];
 
   return (
@@ -340,13 +311,7 @@ export default function LeadDetailPage() {
           {tab === "seo" && <SeoTab seo={lead.seoSignals} />}
           {tab === "tech" && <TechTab lead={lead} />}
           {tab === "contacts" && <ContactsTab lead={lead} />}
-          {tab === "outreach" && (
-            <OutreachTab
-              drafts={lead.outreach}
-              generating={generating}
-              onGenerate={generateOutreach}
-            />
-          )}
+          {tab === "deep_analysis" && <DeepAnalysisPanel leadId={lead.id} />}
         </div>
 
         {/* Side sticky: status + notes */}
@@ -1011,187 +976,7 @@ function ContactsTab({ lead }: { lead: Lead }) {
   );
 }
 
-/* ---------- Outreach tab ---------- */
-
-function OutreachTab({
-  drafts,
-  generating,
-  onGenerate,
-}: {
-  drafts: OutreachDraft[];
-  generating: boolean;
-  onGenerate: () => void;
-}) {
-  const [channel, setChannel] = useState<"email" | "linkedin">("email");
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const latest = drafts[0];
-  const older = drafts.slice(1);
-
-  async function copy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* noop */
-    }
-  }
-
-  return (
-    <Card
-      title="Outreach AI"
-      subtitle="Hook, mini audit e messaggi generati con Claude"
-      actions={
-        <Button
-          size="sm"
-          onClick={onGenerate}
-          disabled={generating}
-          iconLeft={<Wand2 className="h-3.5 w-3.5" />}
-        >
-          {generating ? "Generazione…" : latest ? "Rigenera" : "Genera"}
-        </Button>
-      }
-    >
-      {!latest ? (
-        <div className="rounded-xl bg-surface-muted px-4 py-10 text-center">
-          <Sparkles className="mx-auto h-8 w-8 text-brand-400" />
-          <p className="mt-2 text-sm font-medium text-ink-900">
-            Nessun outreach generato
-          </p>
-          <p className="mt-1 text-xs text-ink-500">
-            Clicca &quot;Genera&quot; per creare hook + mini audit + email + DM LinkedIn.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-5 text-sm">
-          <OutreachSection label="Hook" value={latest.hook} />
-          <OutreachSection label="Mini audit" value={latest.miniAudit} preformatted />
-          <OutreachSection label="Servizio suggerito" value={latest.suggestedOffer} />
-
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <Tabs
-                variant="pill"
-                value={channel}
-                onChange={setChannel}
-                items={[
-                  { id: "email" as const, label: "Email" },
-                  { id: "linkedin" as const, label: "LinkedIn" },
-                ]}
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() =>
-                  copy(channel === "email" ? latest.emailDraft : latest.linkedinDraft)
-                }
-                iconLeft={
-                  copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />
-                }
-              >
-                {copied ? "Copiato" : "Copia"}
-              </Button>
-            </div>
-            <pre className="whitespace-pre-wrap rounded-xl bg-surface-muted px-4 py-3 text-xs leading-relaxed text-ink-700">
-              {channel === "email" ? latest.emailDraft : latest.linkedinDraft}
-            </pre>
-          </div>
-
-          <p className="text-[11px] text-ink-400">
-            Generato {formatDateTime(latest.createdAt)} · {latest.model} · prompt{" "}
-            {latest.promptVersion}
-          </p>
-
-          {older.length > 0 && (
-            <div className="border-t border-ink-300/40 pt-4">
-              <button
-                type="button"
-                onClick={() => setHistoryOpen((v) => !v)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-500 hover:text-ink-900"
-              >
-                <ChevronDown
-                  className={clsx(
-                    "h-4 w-4 transition-transform",
-                    historyOpen && "rotate-180",
-                  )}
-                />
-                Versioni precedenti ({older.length})
-              </button>
-              {historyOpen && (
-                <ul className="mt-3 space-y-2">
-                  {older.map((d) => (
-                    <HistoryRow key={d.id} draft={d} />
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function HistoryRow({ draft }: { draft: OutreachDraft }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <li className="rounded-xl bg-surface-muted px-3 py-2 text-xs">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 text-left"
-      >
-        <ChevronDown
-          className={clsx(
-            "h-3.5 w-3.5 text-ink-400 transition-transform",
-            open && "rotate-180",
-          )}
-        />
-        <span className="font-medium text-ink-900">
-          {formatDateTime(draft.createdAt)}
-        </span>
-        <span className="text-ink-400">· {draft.model}</span>
-        <span className="ml-auto text-ink-400">v{draft.promptVersion}</span>
-      </button>
-      {open && (
-        <div className="mt-2 space-y-3 border-t border-ink-300/40 pt-2">
-          <OutreachSection label="Hook" value={draft.hook} />
-          <OutreachSection label="Email" value={draft.emailDraft} preformatted />
-          <OutreachSection label="LinkedIn" value={draft.linkedinDraft} preformatted />
-        </div>
-      )}
-    </li>
-  );
-}
-
 /* ---------- Shared small bits ---------- */
-
-function OutreachSection({
-  label,
-  value,
-  preformatted,
-}: {
-  label: string;
-  value: string;
-  preformatted?: boolean;
-}) {
-  return (
-    <div>
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-400">
-        {label}
-      </p>
-      <p
-        className={clsx(
-          "text-ink-700",
-          preformatted && "whitespace-pre-line",
-        )}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
 
 function DlRow({ label, value }: { label: string; value: string }) {
   return (

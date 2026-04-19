@@ -3,14 +3,50 @@ import { Users, Target, TrendingUp, MailCheck, Plus, ExternalLink } from "lucide
 import { formatDistanceToNow, format, startOfDay, subDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { prisma } from "@/server/db/prisma";
+import { env } from "@/server/env";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { StatTile } from "@/components/ui/StatTile";
 import { DiscoveryChart } from "@/components/dashboard/DiscoveryChart";
 import { CmsDonut } from "@/components/dashboard/CmsDonut";
+import { SerpApiUsageCard } from "@/components/dashboard/SerpApiUsageCard";
 
 export const dynamic = "force-dynamic";
+
+interface SerpApiUsage {
+  left: number;
+  used: number;
+  limit: number;
+  planName: string;
+  resetDate: Date;
+}
+
+async function getSerpApiUsage(): Promise<SerpApiUsage | null> {
+  const key = env().SERPAPI_KEY;
+  if (!key) return null;
+  try {
+    const res = await fetch(
+      `https://serpapi.com/account.json?api_key=${key}`,
+      { next: { revalidate: 3600 } },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as Record<string, unknown>;
+    const left = typeof data.plan_searches_left === "number" ? data.plan_searches_left : null;
+    const used = typeof data.this_month_usage === "number" ? data.this_month_usage : null;
+    const limit = typeof data.searches_per_month === "number" ? data.searches_per_month : null;
+    const planName = typeof data.plan_name === "string" ? data.plan_name : "Free";
+    if (left === null || used === null || limit === null) return null;
+
+    // SerpAPI doesn't expose the reset date — always 1st of next month
+    const now = new Date();
+    const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    return { left, used, limit, planName, resetDate };
+  } catch {
+    return null;
+  }
+}
 
 interface DiscoveryPoint {
   day: string;
@@ -142,7 +178,10 @@ const SEARCH_LABEL: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
-  const data = await loadDashboard();
+  const [data, serpApi] = await Promise.all([
+    loadDashboard(),
+    getSerpApiUsage(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -182,6 +221,16 @@ export default async function DashboardPage() {
           icon={MailCheck}
         />
       </div>
+
+      {serpApi && (
+        <SerpApiUsageCard
+          left={serpApi.left}
+          used={serpApi.used}
+          limit={serpApi.limit}
+          planName={serpApi.planName}
+          resetDate={serpApi.resetDate}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card
