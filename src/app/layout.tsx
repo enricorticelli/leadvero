@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
+import { getSessionUser } from "@/server/auth/session";
 
 const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -17,23 +18,31 @@ export const metadata: Metadata = {
   description: "Lead discovery and qualification for SEO/WordPress/Shopify",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getSessionUser();
+
   return (
     <html lang="it" className={sans.variable}>
       <body className="font-sans">
         <ConfirmProvider>
-          <Sidebar />
-          <div className="flex min-h-screen min-w-0 flex-col md:pl-64">
-            <TopBar />
-            <main className="flex-1 px-4 pb-24 pt-6 md:px-8 md:pb-10">
-              {children}
-            </main>
-          </div>
-          <MobileNav />
+          {user ? (
+            <>
+              <Sidebar role={user.role} />
+              <div className="flex min-h-screen min-w-0 flex-col md:pl-64">
+                <TopBar user={{ username: user.username, role: user.role }} />
+                <main className="flex-1 px-4 pb-24 pt-6 md:px-8 md:pb-10">
+                  {children}
+                </main>
+              </div>
+              <MobileNav />
+            </>
+          ) : (
+            children
+          )}
         </ConfirmProvider>
       </body>
     </html>

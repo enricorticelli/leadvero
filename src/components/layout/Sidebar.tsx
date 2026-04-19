@@ -8,7 +8,7 @@ import {
   Search,
   ListChecks,
   Users,
-  Settings,
+  UserCog,
   Sparkles,
 } from "lucide-react";
 
@@ -26,8 +26,24 @@ const NAV: NavItem[] = [
   { label: "Lead",          href: "/leads",        icon: Users,           match: (p) => p.startsWith("/leads") },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  role: "admin" | "user";
+}
+
+export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname() ?? "/";
+  const items =
+    role === "admin"
+      ? [
+          ...NAV,
+          {
+            label: "Utenti",
+            href: "/users",
+            icon: UserCog,
+            match: (p: string) => p.startsWith("/users"),
+          },
+        ]
+      : NAV;
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-20 hidden w-64 flex-col gap-6 overflow-y-auto border-r border-ink-300/30 bg-surface-muted px-5 py-6 md:flex">
@@ -42,7 +58,7 @@ export function Sidebar() {
       </Link>
 
       <nav className="flex flex-col gap-1">
-        {NAV.map((item) => {
+        {items.map((item) => {
           const active = item.match(pathname);
           const Icon = item.icon;
           return (
@@ -64,14 +80,6 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto flex flex-col gap-1">
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-ink-400">
-          <Settings className="h-5 w-5" />
-          Impostazioni
-          <span className="ml-auto text-[10px] uppercase tracking-wide text-ink-300">
-            soon
-          </span>
-        </div>
-
         <div className="mt-4 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 p-5 text-white shadow-card">
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
             <Sparkles className="h-5 w-5" />

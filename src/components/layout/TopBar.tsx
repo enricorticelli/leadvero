@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Search as SearchIcon } from "lucide-react";
+import { UserMenu } from "./UserMenu";
 
 const TITLES: Array<{ match: (p: string) => boolean; title: string }> = [
   { match: (p) => p === "/",                       title: "Dashboard" },
@@ -16,7 +17,11 @@ function resolveTitle(pathname: string) {
   return TITLES.find((t) => t.match(pathname))?.title ?? "Leadvero";
 }
 
-export function TopBar() {
+interface TopBarProps {
+  user: { username: string; role: "admin" | "user" };
+}
+
+export function TopBar({ user }: TopBarProps) {
   const pathname = usePathname() ?? "/";
   const title = resolveTitle(pathname);
 
@@ -49,15 +54,7 @@ export function TopBar() {
         <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-tile-pink-icon" />
       </button>
 
-      <div className="flex items-center gap-3">
-        <div className="hidden text-right sm:block">
-          <p className="text-sm font-semibold text-ink-900">Evoluzione</p>
-          <p className="text-[11px] text-ink-500">devs@evoluzione.agency</p>
-        </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100 text-sm font-bold text-brand-700">
-          EV
-        </div>
-      </div>
+      <UserMenu username={user.username} role={user.role} />
     </header>
   );
 }

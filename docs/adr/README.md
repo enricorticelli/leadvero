@@ -11,6 +11,7 @@ This folder stores Architecture Decision Records.
 - [ADR-0004 Integrate SerpAPI for discovery and Anthropic for outreach](./0004-serpapi-and-anthropic-integrations.md)
 - [ADR-0005 Use Vitest for server-side unit tests](./0005-vitest-unit-test-strategy.md)
 - [ADR-0006 In-house UI design system with Tailwind + Lucide + Recharts](./0006-ui-design-system-and-component-library.md)
+- [ADR-0007 Cookie-based JWT session auth with role flags](./0007-cookie-jwt-session-auth.md)
 
 ## ADR Status Rules
 
@@ -29,4 +30,4 @@ Create ADRs for decisions about:
 
 ## Open TODOs
 
-- Authentication and authorization approach is not yet detectable from repository code. Document it when the product adds protected routes, identity, or role checks.
+_(none — auth covered by ADR-0007)_

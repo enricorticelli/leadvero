@@ -1,4 +1,5 @@
 import { prisma } from "../src/server/db/prisma";
+import bcrypt from "bcryptjs";
 
 const FIXTURES = [
   {
@@ -81,7 +82,27 @@ const FIXTURES = [
   },
 ];
 
+async function seedAdminUser() {
+  const existing = await prisma.user.findUnique({ where: { username: "admin" } });
+  if (existing) {
+    console.log("Admin user already exists — skipping.");
+    return;
+  }
+  const passwordHash = await bcrypt.hash("admin", 10);
+  await prisma.user.create({
+    data: {
+      username: "admin",
+      passwordHash,
+      role: "admin",
+      mustChangePassword: true,
+    },
+  });
+  console.log("Created default admin user (admin / admin). Change at first login.");
+}
+
 async function main() {
+  await seedAdminUser();
+
   const job = await prisma.searchJob.create({
     data: {
       keyword: null,
