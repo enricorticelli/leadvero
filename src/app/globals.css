@@ -6,6 +6,15 @@
   color-scheme: light;
 }
 
+html,
 body {
-  @apply bg-white text-neutral-900 antialiased;
+  @apply bg-surface-muted text-ink-900 antialiased;
+}
+
+body {
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+*:focus-visible {
+  @apply outline-none ring-2 ring-brand-400 ring-offset-2 ring-offset-surface-muted;
 }

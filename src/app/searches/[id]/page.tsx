@@ -1,6 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 interface Job {
   id: string;
@@ -20,6 +24,13 @@ const STATUS_LABELS: Record<string, string> = {
   running: "In esecuzione…",
   done: "Completata",
   failed: "Errore",
+};
+
+const STATUS_TONE: Record<string, "yellow" | "brand" | "green" | "pink"> = {
+  pending: "yellow",
+  running: "brand",
+  done:    "green",
+  failed:  "pink",
 };
 
 export default function SearchStatusPage() {
@@ -45,73 +56,124 @@ export default function SearchStatusPage() {
       }
     }
     poll();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [id, router]);
 
   if (!job) {
-    return <p className="text-neutral-500 text-sm">Caricamento…</p>;
+    return (
+      <Card className="mx-auto max-w-md py-10 text-center text-sm text-ink-500">
+        Caricamento…
+      </Card>
+    );
   }
 
+  const progress =
+    job.maxResults > 0
+      ? Math.min(100, Math.round((job.scannedCount / job.maxResults) * 100))
+      : 0;
+
+  const isRunning = job.status === "running" || job.status === "pending";
+  const Icon =
+    job.status === "done" ? CheckCircle2 :
+    job.status === "failed" ? AlertCircle : Loader2;
+  const iconColor =
+    job.status === "done" ? "text-tile-green-icon" :
+    job.status === "failed" ? "text-tile-pink-icon" : "text-brand-600";
+
   return (
-    <div className="max-w-md space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Ricerca in corso</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          {job.niche && `${job.niche}`}
-          {job.city && ` — ${job.city}`}
-          {` (${job.targetPlatform})`}
-        </p>
-      </div>
-
-      <div className="space-y-2 text-sm">
-        <p>
-          <span className="font-medium">Stato:</span>{" "}
-          <span
-            className={
-              job.status === "done"
-                ? "text-green-600"
-                : job.status === "failed"
-                  ? "text-red-600"
-                  : "text-blue-600"
-            }
-          >
-            {STATUS_LABELS[job.status] ?? job.status}
-          </span>
-        </p>
-        <p>
-          <span className="font-medium">Scoperti:</span> {job.discoveredCount} /{" "}
-          {job.maxResults}
-        </p>
-        <p>
-          <span className="font-medium">Scansionati:</span> {job.scannedCount}
-        </p>
-        <p>
-          <span className="font-medium">Scorati:</span> {job.scoredCount}
-        </p>
-      </div>
-
-      {job.status === "running" || job.status === "pending" ? (
-        <div className="h-2 w-full rounded bg-neutral-100">
+    <div className="mx-auto max-w-xl space-y-5">
+      <Card>
+        <div className="flex items-start gap-4">
           <div
-            className="h-2 rounded bg-blue-500 transition-all"
-            style={{
-              width: `${job.maxResults > 0 ? Math.round((job.scannedCount / job.maxResults) * 100) : 0}%`,
-            }}
-          />
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+              job.status === "done"   ? "bg-tile-green-bg"  :
+              job.status === "failed" ? "bg-tile-pink-bg"   :
+              "bg-brand-50"
+            }`}
+          >
+            <Icon
+              className={`h-6 w-6 ${iconColor} ${isRunning ? "animate-spin" : ""}`}
+            />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-ink-900">
+                Ricerca {STATUS_LABELS[job.status] ?? job.status}
+              </h2>
+              <Badge tone={STATUS_TONE[job.status] ?? "neutral"}>
+                {STATUS_LABELS[job.status] ?? job.status}
+              </Badge>
+            </div>
+            <p className="mt-1 text-sm text-ink-500">
+              {job.niche}
+              {job.city && ` · ${job.city}`}
+              {` · ${job.targetPlatform}`}
+            </p>
+          </div>
         </div>
-      ) : null}
 
-      {job.status === "failed" && job.errorMessage && (
-        <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600">
-          {job.errorMessage}
-        </p>
-      )}
+        <div className="mt-6 grid grid-cols-3 gap-3 text-center">
+          <div className="rounded-xl bg-surface-muted p-3">
+            <p className="text-xl font-bold text-ink-900">
+              {job.discoveredCount}
+            </p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-ink-500">
+              Scoperti
+            </p>
+          </div>
+          <div className="rounded-xl bg-surface-muted p-3">
+            <p className="text-xl font-bold text-ink-900">
+              {job.scannedCount}
+            </p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-ink-500">
+              Scansionati
+            </p>
+          </div>
+          <div className="rounded-xl bg-surface-muted p-3">
+            <p className="text-xl font-bold text-ink-900">
+              {job.scoredCount}
+            </p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-ink-500">
+              Scorati
+            </p>
+          </div>
+        </div>
 
-      {job.status === "done" && (
-        <p className="text-sm text-green-600">
-          Ricerca completata — reindirizzamento ai lead…
-        </p>
-      )}
+        {isRunning && (
+          <div className="mt-5">
+            <div className="mb-1.5 flex items-center justify-between text-xs text-ink-500">
+              <span>Avanzamento</span>
+              <span className="font-semibold text-ink-700">{progress}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-sunken">
+              <div
+                className="h-full rounded-full bg-brand-500 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {job.status === "failed" && job.errorMessage && (
+          <p className="mt-5 rounded-xl bg-tile-pink-bg px-4 py-3 text-sm text-tile-pink-icon">
+            {job.errorMessage}
+          </p>
+        )}
+
+        {job.status === "done" && (
+          <p className="mt-5 rounded-xl bg-tile-green-bg px-4 py-3 text-sm text-tile-green-icon">
+            Ricerca completata — reindirizzamento ai lead…
+          </p>
+        )}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <Button href="/searches" variant="ghost">
+            Torna alle ricerche
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }

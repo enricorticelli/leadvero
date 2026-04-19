@@ -8,6 +8,9 @@ const schema = z.object({
   LEADVERO_USER_AGENT: z
     .string()
     .default("Leadvero/0.1 (+https://evoluzione.agency)"),
+  SESSION_SECRET: z
+    .string()
+    .default("dev-insecure-secret-change-in-production-please-32chars"),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -38,4 +41,8 @@ export function requireAnthropic(): string {
   const key = env().ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set");
   return key;
+}
+
+export function sessionSecret(): Uint8Array {
+  return new TextEncoder().encode(env().SESSION_SECRET);
 }

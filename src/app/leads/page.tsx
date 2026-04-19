@@ -1,6 +1,24 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Download,
+  Mail,
+  MailX,
+  Trash2,
+  SlidersHorizontal,
+  X,
+  Pencil,
+  Plus,
+  Globe,
+} from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Input, Select, Field, Textarea } from "@/components/ui/Input";
+import { Table, THead, TH, TBody, TR, TD } from "@/components/ui/Table";
+import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 interface Lead {
   id: string;
@@ -12,8 +30,17 @@ interface Lead {
   totalScore: number;
   publicEmail: string | null;
   status: string;
+  userNotes: string | null;
   scoreReasons: string[] | null;
 }
+
+const STATUS_OPTIONS = [
+  { value: "new", label: "Nuovo" },
+  { value: "to_contact", label: "Da contattare" },
+  { value: "contacted", label: "Contattato" },
+  { value: "not_relevant", label: "Non rilevante" },
+  { value: "closed", label: "Chiuso" },
+];
 
 interface LeadsResponse {
   leads: Lead[];
@@ -30,8 +57,19 @@ const STATUS_LABELS: Record<string, string> = {
   closed: "Chiuso",
 };
 
-const SCORE_COLOR = (s: number) =>
-  s >= 70 ? "text-green-700" : s >= 45 ? "text-yellow-700" : "text-neutral-500";
+const STATUS_TONE: Record<string, "neutral" | "brand" | "green" | "yellow" | "pink"> = {
+  new: "neutral",
+  to_contact: "yellow",
+  contacted: "brand",
+  not_relevant: "pink",
+  closed: "green",
+};
+
+function scoreTone(s: number): "green" | "yellow" | "neutral" {
+  if (s >= 70) return "green";
+  if (s >= 45) return "yellow";
+  return "neutral";
+}
 
 export default function LeadsPage() {
   const [data, setData] = useState<LeadsResponse | null>(null);
@@ -40,6 +78,77 @@ export default function LeadsPage() {
   const [minScore, setMinScore] = useState("");
   const [cms, setCms] = useState("");
   const [hasEmail, setHasEmail] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [editing, setEditing] = useState<Lead | null>(null);
+  const [editStatus, setEditStatus] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addUrl, setAddUrl] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const activeFilters =
+    (search ? 1 : 0) + (minScore ? 1 : 0) + (cms ? 1 : 0) + (hasEmail ? 1 : 0);
+  const confirm = useConfirm();
+  const router = useRouter();
+
+  function openEdit(lead: Lead) {
+    setEditing(lead);
+    setEditStatus(lead.status);
+    setEditNotes(lead.userNotes ?? "");
+  }
+
+  async function submitAdd() {
+    if (!addUrl.trim() || addLoading) return;
+    setAddLoading(true);
+    setAddError(null);
+    try {
+      const res = await fetch("/api/leads/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: addUrl.trim() }),
+      });
+      const data = (await res.json()) as {
+        leadId?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.leadId) {
+        setAddError(data.error ?? "Errore imprevisto");
+        setAddLoading(false);
+        return;
+      }
+      router.push(`/leads/${data.leadId}`);
+    } catch {
+      setAddError("Errore di rete. Riprova.");
+      setAddLoading(false);
+    }
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    setSavingEdit(true);
+    const res = await fetch(`/api/leads/${editing.id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: editStatus, userNotes: editNotes }),
+    });
+    setSavingEdit(false);
+    if (res.ok) {
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              leads: prev.leads.map((l) =>
+                l.id === editing.id
+                  ? { ...l, status: editStatus, userNotes: editNotes }
+                  : l,
+              ),
+            }
+          : prev,
+      );
+      setEditing(null);
+    }
+  }
 
   const load = useCallback(async () => {
     const sp = new URLSearchParams({ page: String(page), perPage: "25" });
@@ -51,7 +160,9 @@ export default function LeadsPage() {
     if (res.ok) setData((await res.json()) as LeadsResponse);
   }, [page, search, minScore, cms, hasEmail]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function buildExportUrl() {
     const sp = new URLSearchParams();
@@ -63,151 +174,352 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">
-          Lead{data ? ` (${data.total})` : ""}
-        </h1>
-        <a
-          href={buildExportUrl()}
-          download
-          className="rounded border px-3 py-1.5 text-sm hover:bg-neutral-50"
-        >
-          Esporta CSV
-        </a>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm text-ink-500">Lead qualificati</p>
+          <h2 className="text-2xl font-bold text-ink-900">
+            {data ? `${data.total} lead` : "Caricamento…"}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => setFiltersOpen((v) => !v)}
+            iconLeft={<SlidersHorizontal className="h-4 w-4" />}
+          >
+            Filtri
+            {activeFilters > 0 && (
+              <Badge tone="brand" className="ml-1">
+                {activeFilters}
+              </Badge>
+            )}
+          </Button>
+          <Button
+            href={buildExportUrl()}
+            variant="secondary"
+            download
+            iconLeft={<Download className="h-4 w-4" />}
+          >
+            Esporta CSV
+          </Button>
+          <Button
+            onClick={() => {
+              setAddUrl("");
+              setAddError(null);
+              setAddOpen(true);
+            }}
+            iconLeft={<Plus className="h-4 w-4" />}
+          >
+            Aggiungi sito
+          </Button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 text-sm">
-        <input
-          placeholder="Cerca…"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          className="rounded border px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          placeholder="Score min"
-          type="number"
-          value={minScore}
-          onChange={(e) => { setMinScore(e.target.value); setPage(1); }}
-          className="w-28 rounded border px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <select
-          value={cms}
-          onChange={(e) => { setCms(e.target.value); setPage(1); }}
-          className="rounded border px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">CMS: tutti</option>
-          <option value="shopify">Shopify</option>
-          <option value="wordpress">WordPress</option>
-          <option value="woocommerce">WooCommerce</option>
-        </select>
-        <label className="flex items-center gap-1.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={hasEmail}
-            onChange={(e) => { setHasEmail(e.target.checked); setPage(1); }}
-          />
-          Solo con email
-        </label>
-      </div>
+      {filtersOpen && (
+        <Card padding="md">
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              placeholder="Cerca azienda o dominio…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-64"
+            />
+            <Input
+              placeholder="Score min"
+              type="number"
+              value={minScore}
+              onChange={(e) => {
+                setMinScore(e.target.value);
+                setPage(1);
+              }}
+              className="w-32"
+            />
+            <Select
+              value={cms}
+              onChange={(e) => {
+                setCms(e.target.value);
+                setPage(1);
+              }}
+              className="w-44"
+            >
+              <option value="">CMS: tutti</option>
+              <option value="shopify">Shopify</option>
+              <option value="wordpress">WordPress</option>
+              <option value="woocommerce">WooCommerce</option>
+            </Select>
+            <label className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-ink-700 ring-1 ring-ink-300/60 hover:bg-surface-muted">
+              <input
+                type="checkbox"
+                checked={hasEmail}
+                onChange={(e) => {
+                  setHasEmail(e.target.checked);
+                  setPage(1);
+                }}
+                className="h-4 w-4 rounded text-brand-600 focus:ring-brand-400"
+              />
+              Solo con email
+            </label>
+            {activeFilters > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setMinScore("");
+                  setCms("");
+                  setHasEmail(false);
+                  setPage(1);
+                }}
+                className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-900"
+              >
+                <X className="h-3.5 w-3.5" />
+                Azzera filtri
+              </button>
+            )}
+          </div>
+        </Card>
+      )}
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded border">
-        <table className="w-full text-sm">
-          <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
+      <Card padding="sm">
+        <Table>
+          <THead>
             <tr>
-              <th className="px-4 py-3">Azienda / Dominio</th>
-              <th className="px-4 py-3">CMS</th>
-              <th className="px-4 py-3">Nicchia</th>
-              <th className="px-4 py-3">Score</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Stato</th>
-              <th className="px-4 py-3"></th>
+              <TH>Azienda / Dominio</TH>
+              <TH>CMS</TH>
+              <TH>Nicchia</TH>
+              <TH>Score</TH>
+              <TH>Email</TH>
+              <TH>Stato</TH>
+              <TH />
             </tr>
-          </thead>
-          <tbody className="divide-y">
+          </THead>
+          <TBody>
             {data?.leads.map((lead) => (
-              <tr key={lead.id} className="hover:bg-neutral-50">
-                <td className="px-4 py-3">
-                  <p className="font-medium">{lead.companyName ?? lead.domain}</p>
-                  <p className="text-xs text-neutral-400">{lead.domain}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs">
-                    {lead.cms ?? "—"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-neutral-600">{lead.niche ?? "—"}</td>
-                <td className={`px-4 py-3 font-semibold ${SCORE_COLOR(lead.totalScore)}`}>
-                  {lead.totalScore}
-                </td>
-                <td className="px-4 py-3">
+              <TR
+                key={lead.id}
+                onClick={() => router.push(`/leads/${lead.id}`)}
+                className="cursor-pointer"
+              >
+                <TD>
+                  <p className="font-semibold text-ink-900">
+                    {lead.companyName ?? lead.domain}
+                  </p>
+                  <p className="text-xs text-ink-400">{lead.domain}</p>
+                </TD>
+                <TD>
+                  {lead.cms ? (
+                    <Badge tone="blue" className="capitalize">
+                      {lead.cms}
+                    </Badge>
+                  ) : (
+                    <span className="text-ink-300">—</span>
+                  )}
+                </TD>
+                <TD className="text-ink-500">{lead.niche ?? "—"}</TD>
+                <TD>
+                  <Badge tone={scoreTone(lead.totalScore)}>
+                    <span className="font-bold">{lead.totalScore}</span>
+                  </Badge>
+                </TD>
+                <TD>
                   {lead.publicEmail ? (
-                    <a href={`mailto:${lead.publicEmail}`} className="text-blue-600 hover:underline truncate block max-w-[180px]">
-                      {lead.publicEmail}
+                    <a
+                      href={`mailto:${lead.publicEmail}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex max-w-[200px] items-center gap-1.5 truncate text-xs text-brand-600 hover:underline"
+                    >
+                      <Mail className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{lead.publicEmail}</span>
                     </a>
                   ) : (
-                    <span className="text-neutral-300">—</span>
+                    <span className="flex items-center gap-1.5 text-xs text-ink-300">
+                      <MailX className="h-3.5 w-3.5" />
+                      —
+                    </span>
                   )}
-                </td>
-                <td className="px-4 py-3">
-                  <span className="text-xs">{STATUS_LABELS[lead.status] ?? lead.status}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <Link
-                      href={`/leads/${lead.id}`}
-                      className="text-blue-600 hover:underline text-xs"
-                    >
-                      Dettaglio
-                    </Link>
+                </TD>
+                <TD>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(lead);
+                    }}
+                    className="group inline-flex items-center gap-1.5 rounded-lg transition-colors"
+                    aria-label="Cambia stato"
+                    title="Cambia stato o aggiungi note"
+                  >
+                    <Badge tone={STATUS_TONE[lead.status] ?? "neutral"}>
+                      {STATUS_LABELS[lead.status] ?? lead.status}
+                    </Badge>
+                    <Pencil className="h-3 w-3 text-ink-300 opacity-0 transition-opacity group-hover:opacity-100" />
+                    {lead.userNotes && (
+                      <span
+                        className="h-1.5 w-1.5 rounded-full bg-tile-yellow-icon"
+                        title="Note presenti"
+                      />
+                    )}
+                  </button>
+                </TD>
+                <TD className="text-right">
+                  <div className="flex items-center justify-end gap-2">
                     <button
-                      onClick={async () => {
-                        if (!confirm(`Eliminare "${lead.companyName ?? lead.domain}"?`)) return;
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const ok = await confirm({
+                          title: `Eliminare "${lead.companyName ?? lead.domain}"?`,
+                          message:
+                            "Il lead verrà rimosso definitivamente insieme a scan e outreach.",
+                          confirmLabel: "Elimina",
+                          tone: "danger",
+                        });
+                        if (!ok) return;
                         await fetch(`/api/leads/${lead.id}`, { method: "DELETE" });
                         load();
                       }}
-                      className="text-xs text-red-400 hover:text-red-600"
+                      aria-label="Elimina lead"
+                      className="rounded-lg p-1.5 text-ink-400 hover:bg-tile-pink-bg hover:text-tile-pink-icon"
                     >
-                      Elimina
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                </td>
-              </tr>
+                </TD>
+              </TR>
             ))}
             {data?.leads.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-neutral-400">
-                  Nessun lead trovato.
-                </td>
-              </tr>
+              <TR>
+                <TD colSpan={7} className="py-10 text-center text-ink-400">
+                  Nessun lead trovato con questi filtri.
+                </TD>
+              </TR>
             )}
-          </tbody>
-        </table>
-      </div>
+          </TBody>
+        </Table>
+      </Card>
 
-      {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex items-center gap-3 text-sm">
-          <button
+        <div className="flex items-center justify-center gap-3 text-sm">
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="rounded border px-3 py-1 disabled:opacity-40"
           >
             ← Indietro
-          </button>
-          <span className="text-neutral-500">
-            Pagina {page} di {data.totalPages}
+          </Button>
+          <span className="text-ink-500">
+            Pagina <span className="font-semibold text-ink-900">{page}</span> di{" "}
+            {data.totalPages}
           </span>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
             disabled={page === data.totalPages}
-            className="rounded border px-3 py-1 disabled:opacity-40"
           >
             Avanti →
-          </button>
+          </Button>
         </div>
       )}
+
+      <Modal
+        open={editing !== null}
+        onClose={() => (savingEdit ? null : setEditing(null))}
+        title={editing ? editing.companyName ?? editing.domain : ""}
+        description="Aggiorna lo stato del lead e le tue note personali."
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => setEditing(null)}
+              disabled={savingEdit}
+            >
+              Annulla
+            </Button>
+            <Button onClick={saveEdit} disabled={savingEdit}>
+              {savingEdit ? "Salvataggio…" : "Salva"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Field label="Stato">
+            <Select
+              value={editStatus}
+              onChange={(e) => setEditStatus(e.target.value)}
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Note personali">
+            <Textarea
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              placeholder="Es. contattato il 15/04, risposta il 18/04…"
+              rows={5}
+            />
+          </Field>
+        </div>
+      </Modal>
+
+      <Modal
+        open={addOpen}
+        onClose={() => (addLoading ? null : setAddOpen(false))}
+        title="Aggiungi sito manualmente"
+        description="Inserisci un URL per analizzarlo e crearne un lead con scoring."
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => setAddOpen(false)}
+              disabled={addLoading}
+            >
+              Annulla
+            </Button>
+            <Button onClick={submitAdd} disabled={addLoading || !addUrl.trim()}>
+              {addLoading ? "Analisi in corso…" : "Analizza e crea"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Field
+            label="URL del sito"
+            hint="Il sito verrà scansionato: SEO, CMS, contatti, qualità. Può richiedere 10–30 secondi."
+          >
+            <div className="relative">
+              <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+              <Input
+                autoFocus
+                value={addUrl}
+                onChange={(e) => {
+                  setAddUrl(e.target.value);
+                  setAddError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitAdd();
+                }}
+                placeholder="https://esempio.it"
+                className="pl-9"
+                disabled={addLoading}
+              />
+            </div>
+          </Field>
+          {addError && (
+            <div className="rounded-lg bg-tile-pink-bg px-3 py-2 text-sm text-tile-pink-icon">
+              {addError}
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

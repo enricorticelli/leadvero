@@ -29,3 +29,18 @@ export async function GET(
   if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(job);
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const job = await prisma.searchJob.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await prisma.searchJob.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}
