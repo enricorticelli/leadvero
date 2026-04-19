@@ -10,7 +10,6 @@ export async function GET(
     where: { id },
     include: {
       scans: { orderBy: { scannedAt: "asc" } },
-      outreach: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });

@@ -128,7 +128,6 @@ model Lead {
   lastScannedAt         DateTime?
 
   scans                 ScanResult[]
-  outreach              OutreachDraft[]
 
   @@index([searchJobId])
   @@index([totalScore])
@@ -155,19 +154,3 @@ model ScanResult {
   @@index([leadId])
 }
 
-model OutreachDraft {
-  id               String    @id @default(cuid())
-  leadId           String
-  lead             Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-
-  hook             String
-  miniAudit        String
-  suggestedOffer   String
-  emailDraft       String
-  linkedinDraft    String
-  model            String
-  promptVersion    String
-  createdAt        DateTime  @default(now())
-
-  @@index([leadId])
-}
