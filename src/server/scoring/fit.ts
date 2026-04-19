@@ -1,5 +1,6 @@
-import type { TargetPlatform } from "@prisma/client";
 import type { CmsDetection } from "../crawl/detect/cms";
+
+type TargetPlatform = "shopify" | "wordpress" | "both" | "any";
 
 export interface FitInput {
   targetPlatform: TargetPlatform;

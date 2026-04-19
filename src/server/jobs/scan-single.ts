@@ -2,10 +2,8 @@ import { prisma } from "../db/prisma";
 import { normalizeUrl } from "../discovery/normalize";
 import { scanSite } from "../crawl/site-scan";
 import { score } from "../scoring";
-import { Prisma } from "@prisma/client";
-
-function toJson(v: unknown): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
+function toJson(v: unknown): string | null {
+  return v == null ? null : JSON.stringify(v);
 }
 
 const MANUAL_JOB_ID = "__manual__";
@@ -118,7 +116,7 @@ export async function scanSingleUrl(rawUrl: string): Promise<ScanSingleResult> {
         commercialScore: scoreOutput.commercialScore,
         contactabilityScore: scoreOutput.contactabilityScore,
         totalScore: scoreOutput.totalScore,
-        scoreReasons: scoreOutput.scoreReasons,
+        scoreReasons: toJson(scoreOutput.scoreReasons),
       },
       create: {
         searchJobId: MANUAL_JOB_ID,
@@ -149,12 +147,13 @@ export async function scanSingleUrl(rawUrl: string): Promise<ScanSingleResult> {
         commercialScore: scoreOutput.commercialScore,
         contactabilityScore: scoreOutput.contactabilityScore,
         totalScore: scoreOutput.totalScore,
-        scoreReasons: scoreOutput.scoreReasons,
+        scoreReasons: toJson(scoreOutput.scoreReasons),
         lastScannedAt: new Date(),
       },
     });
 
-    await prisma.scanResult.createMany({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma as any).scanResult.createMany({
       data: scanResult.pages.map((p) => ({
         leadId: lead.id,
         scannedUrl: p.url,

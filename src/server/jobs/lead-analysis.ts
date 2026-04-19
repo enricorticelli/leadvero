@@ -1,4 +1,4 @@
-import { type PageType, Prisma } from "@prisma/client";
+type PageType = "home" | "contact" | "about" | "blog_index" | "collection" | "product" | "service" | "other";
 import { prisma } from "../db/prisma";
 import { fetchPage } from "../crawl/fetcher";
 import * as parser from "../crawl/parser";
@@ -405,6 +405,6 @@ function isSameHost(urlString: string, baseUrl: string): boolean {
   }
 }
 
-function toJson(value: unknown): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+function toJson(value: unknown): string | null {
+  return value == null ? null : JSON.stringify(value);
 }

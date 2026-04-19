@@ -2,6 +2,7 @@
   "name": "leadvero",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -17,7 +18,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:worker": "esbuild src/server/jobs/worker.ts --bundle --platform=node --target=node20 --outfile=dist/worker.cjs --external:@prisma/client",
+    "build:db-template": "tsx scripts/build-db-template.ts",
+    "build:all": "prisma generate && next build && npm run build:worker && xcopy /E /I /Y .next\\static .next\\standalone\\.next\\static && npm run build:db-template",
+    "dist:win": "npm run build:all && electron-builder --win",
+    "dist:mac": "npm run build:all && electron-builder --mac",
+    "dist": "npm run build:all && electron-builder --win"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -39,6 +46,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0",
+    "esbuild": "^0.24.0",
     "@types/node": "^22.9.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

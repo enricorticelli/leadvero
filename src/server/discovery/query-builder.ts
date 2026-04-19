@@ -1,4 +1,4 @@
-import type { TargetPlatform } from "@prisma/client";
+type TargetPlatform = "shopify" | "wordpress" | "both" | "any";
 
 export interface QueryInput {
   keyword?: string | null;

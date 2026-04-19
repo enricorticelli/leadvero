@@ -9,9 +9,7 @@ Leadvero compresses the manual prospecting workflow (search → open site → in
 ### Prerequisites
 
 - Node.js 20+
-- Docker (for Postgres)
 - SerpAPI account ([serpapi.com](https://serpapi.com)) — free tier: 100 searches/month
-- Anthropic API key ([console.anthropic.com](https://console.anthropic.com))
 
 ### First-time setup
 
@@ -21,7 +19,10 @@ npm install
 
 # 2. Configure environment
 cp .env.example .env
-# Fill in SERPAPI_KEY and ANTHROPIC_API_KEY (DATABASE_URL is pre-filled for docker)
+# Fill in SERPAPI_KEY
+
+# 3. Create the database and seed fixture data
+npx prisma migrate dev
 ```
 
 ### Run everything with one command
@@ -31,23 +32,20 @@ npm run dev:up
 ```
 
 This single command:
-1. Starts Postgres via `docker compose up -d`
-2. Waits until Postgres accepts connections
-3. Syncs the database schema (`prisma db push`)
-4. Seeds 3 fixture leads if the DB is empty
-5. Starts Next.js dev server at [http://localhost:3000](http://localhost:3000)
-6. Starts the background job worker
+1. Syncs the database schema to `leadvero.db` (`prisma db push`)
+2. Seeds 3 fixture leads if the DB is empty
+3. Starts Next.js dev server at [http://localhost:3000](http://localhost:3000)
+4. Starts the background job worker
 
 Stop with `Ctrl+C`.
 
 ### Manual startup (alternative)
 
 ```bash
-docker compose up -d
-npm run db:push       # sync schema (idempotent)
-npm run db:seed       # optional fixture data
-npm run dev           # Next.js
-npm run worker        # job worker (second terminal)
+npm run db:push   # sync schema (idempotent)
+npm run db:seed   # optional fixture data
+npm run dev       # Next.js
+npm run worker    # job worker (second terminal)
 ```
 
 ## Usage
@@ -79,7 +77,7 @@ src/
     db/                  Prisma singleton
     env.ts               Zod-validated env
 prisma/
-  schema.prisma          SearchJob · Lead · ScanResult · OutreachDraft
+  schema.prisma          SearchJob · Lead · ScanResult · LeadAnalysisRun
 tests/
   discovery/             normalize, query-builder, discover orchestrator
   crawl/detect/          cms, seo, contact, quality
@@ -103,7 +101,7 @@ Weights are editable in [src/server/scoring/config.ts](src/server/scoring/config
 ## Development
 
 ```bash
-npm test          # run all 45 unit tests
+npm test          # run all unit tests
 npm run typecheck # TypeScript check
 npm run lint      # ESLint
 npm run db:studio # Prisma Studio (visual DB browser)
@@ -113,11 +111,20 @@ npm run db:studio # Prisma Studio (visual DB browser)
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Yes | Postgres connection string |
+| `DATABASE_URL` | No | SQLite file path — defaults to `file:./leadvero.db` |
 | `SERPAPI_KEY` | Yes | SerpAPI key for Google search |
-| `ANTHROPIC_API_KEY` | Yes | Anthropic key for outreach generation |
-| `ANTHROPIC_MODEL` | No | Default: `claude-sonnet-4-6` |
 | `LEADVERO_USER_AGENT` | No | Crawler User-Agent string |
+| `SESSION_SECRET` | No | JWT signing secret — auto-generated in desktop app |
+
+## Desktop distribution
+
+To build the macOS `.dmg` installer (requires a Mac):
+
+```bash
+npm run dist
+```
+
+See [docs/runbook/0003-build-macos-dmg.md](docs/runbook/0003-build-macos-dmg.md) for the full procedure.
 
 ## Compliance notes
 

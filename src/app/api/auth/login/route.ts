@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   await setSessionCookie({
     userId: user.id,
     username: user.username,
-    role: user.role,
+    role: user.role as "admin" | "user",
     mustChangePassword: user.mustChangePassword,
   });
 

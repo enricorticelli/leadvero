@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 const schema = z.object({
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: z.string().min(1).default("file:./leadvero.db"),
   SERPAPI_KEY: z.string().optional().default(""),
+  LEADVERO_DATA_DIR: z.string().optional().default(""),
   LEADVERO_USER_AGENT: z
     .string()
     .default("Leadvero/0.1 (+https://evoluzione.agency)"),

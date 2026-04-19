@@ -390,6 +390,15 @@ output.json
 *.sln
 *.suo
 
+### Electron / Desktop build
+electron/leadvero-template.db
+release/
+
+### SQLite local database
+leadvero.db
+leadvero.db-shm
+leadvero.db-wal
+
 ### macOS
 # Finder metadata
 .DS_Store
@@ -398,7 +407,7 @@ output.json
 ._*
 
 # Custom folder icons
-Icon
+Icon
 
 # Volume root files
 .DocumentRevisions-V100

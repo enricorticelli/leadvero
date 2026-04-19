@@ -8,6 +8,11 @@ const MUST_CHANGE_ALLOWED = [
   "/api/auth/logout",
   "/api/users/me/password",
 ];
+const SETUP_ALLOWED = [
+  "/settings",
+  "/api/settings",
+  "/api/auth/logout",
+];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -55,6 +60,23 @@ export async function middleware(req: NextRequest) {
     const url = req.nextUrl.clone();
     url.pathname = "/profile";
     url.search = "?first=1";
+    return NextResponse.redirect(url);
+  }
+
+  // Desktop-only: redirect admin to /settings if SERPAPI_KEY is not configured
+  if (
+    session.role === "admin" &&
+    !process.env.SERPAPI_KEY &&
+    process.env.LEADVERO_DATA_DIR &&
+    !SETUP_ALLOWED.some((p) => pathname === p || pathname.startsWith(p + "/")) &&
+    !ALWAYS_ALLOWED.includes(pathname)
+  ) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Setup required" }, { status: 503 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/settings";
+    url.search = "?setup=1";
     return NextResponse.redirect(url);
   }
 

@@ -5,35 +5,31 @@ import { runSearchJob } from "./runner";
 const POLL_INTERVAL_MS = 2_000;
 
 async function claimNextSearchJob(): Promise<string | null> {
-  const result = await prisma.$queryRaw<{ id: string }[]>`
-    UPDATE "SearchJob"
-    SET status = 'running', "startedAt" = NOW()
-    WHERE id = (
-      SELECT id FROM "SearchJob"
-      WHERE status = 'pending'
-      ORDER BY "createdAt" ASC
-      LIMIT 1
-      FOR UPDATE SKIP LOCKED
-    )
-    RETURNING id
-  `;
-  return result[0]?.id ?? null;
+  const job = await prisma.searchJob.findFirst({
+    where: { status: "pending" },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (!job) return null;
+  const updated = await prisma.searchJob.updateMany({
+    where: { id: job.id, status: "pending" },
+    data: { status: "running", startedAt: new Date() },
+  });
+  return updated.count === 1 ? job.id : null;
 }
 
 async function claimNextLeadAnalysisRun(): Promise<string | null> {
-  const result = await prisma.$queryRaw<{ id: string }[]>`
-    UPDATE "LeadAnalysisRun"
-    SET status = 'running', "startedAt" = NOW()
-    WHERE id = (
-      SELECT id FROM "LeadAnalysisRun"
-      WHERE status = 'pending'
-      ORDER BY "createdAt" ASC
-      LIMIT 1
-      FOR UPDATE SKIP LOCKED
-    )
-    RETURNING id
-  `;
-  return result[0]?.id ?? null;
+  const run = await prisma.leadAnalysisRun.findFirst({
+    where: { status: "pending" },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (!run) return null;
+  const updated = await prisma.leadAnalysisRun.updateMany({
+    where: { id: run.id, status: "pending" },
+    data: { status: "running", startedAt: new Date() },
+  });
+  return updated.count === 1 ? run.id : null;
 }
 
 async function main() {
