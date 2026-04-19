@@ -42,8 +42,7 @@ Use this procedure for first-time deployment and for any production release. Pro
 ## Verification
 
 - `flyctl status -a leadvero` shows at least one `app` machine and one `worker` machine as `started`.
-- `flyctl logs -a leadvero --process app` prints Next.js startup.
-- `flyctl logs -a leadvero --process worker` prints `[worker] Starting Leadvero job worker…`.
+- `flyctl logs -a leadvero -n` prints Next.js startup; use `flyctl machine list -a leadvero` + `flyctl logs -a leadvero --machine <id>` to isolate a specific process-group machine.
 - Visit `https://leadvero.fly.dev/login` (or the custom hostname) and log in.
 
 ## Rollback
@@ -55,5 +54,8 @@ Use this procedure for first-time deployment and for any production release. Pro
 ## Common issues
 
 - **Release command failed (destructive schema change)**: `prisma db push` refuses to drop columns without `--accept-data-loss`. Review the diff, export any data at risk, then re-run manually via `flyctl ssh console`.
-- **Worker loops on the same failed job**: check `flyctl logs --process worker` and inspect the `SearchJob` row; set `status = 'failed'` manually if needed.
+- **`Authentication failed against database server ... provided database credentials ... are not valid`**: `DATABASE_URL` was updated but not fully rolled out to all machines. Check `flyctl secrets list -a leadvero`; if `DATABASE_URL` is `Staged` or `Partial`, run `flyctl secrets deploy -a leadvero`, then verify again.
+- **`P1001: Can't reach database server at leadvero-db.flycast:5432` during deploy/release**: the Postgres machine may be stopped. Check `flyctl status -a leadvero-db`; if needed, start it with `flyctl machine start <db-machine-id> -a leadvero-db`, wait for checks to pass, then rerun the failed command.
+- **`Error [DataError]: Zero-length key is not supported` on login**: `SESSION_SECRET` is empty/invalid on Fly. Regenerate and deploy: `flyctl secrets set -a leadvero --stage SESSION_SECRET="$(openssl rand -hex 32)"` then `flyctl secrets deploy -a leadvero`.
+- **Worker loops on the same failed job**: find the worker machine with `flyctl machine list -a leadvero`, then inspect with `flyctl logs -a leadvero --machine <worker-id>` and inspect the `SearchJob` row; set `status = 'failed'` manually if needed.
 - **Prisma engine not found at runtime**: the image must be rebuilt; the Alpine engine is baked in only when `binaryTargets` includes `linux-musl-openssl-3.0.x` (see [prisma/schema.prisma](../../prisma/schema.prisma)).
