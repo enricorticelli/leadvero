@@ -26,6 +26,7 @@ import { Field, Select, Textarea } from "@/components/ui/Input";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { Tabs } from "@/components/ui/Tabs";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { DeepAnalysisPanel } from "@/components/leads/DeepAnalysisPanel";
 import {
   analyzeLead,
   type Insight,
@@ -149,7 +150,7 @@ const CONTACT_POINTS = {
   socials: 8,
 } as const;
 
-type TabId = "overview" | "seo" | "tech" | "contacts";
+type TabId = "overview" | "seo" | "tech" | "contacts" | "deep_analysis";
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
@@ -235,6 +236,7 @@ export default function LeadDetailPage() {
     { id: "seo" as const, label: "SEO", icon: Search },
     { id: "tech" as const, label: "Sito & tecnologia", icon: Server },
     { id: "contacts" as const, label: "Contatti", icon: Mail },
+    { id: "deep_analysis" as const, label: "Analisi approfondita", icon: FileText },
   ];
 
   return (
@@ -309,6 +311,7 @@ export default function LeadDetailPage() {
           {tab === "seo" && <SeoTab seo={lead.seoSignals} />}
           {tab === "tech" && <TechTab lead={lead} />}
           {tab === "contacts" && <ContactsTab lead={lead} />}
+          {tab === "deep_analysis" && <DeepAnalysisPanel leadId={lead.id} />}
         </div>
 
         {/* Side sticky: status + notes */}

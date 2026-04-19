@@ -35,6 +35,19 @@ enum UserRole {
   user
 }
 
+enum LeadAnalysisStatus {
+  pending
+  running
+  done
+  failed
+}
+
+enum LeadAnalysisPreset {
+  light
+  standard
+  deep
+}
+
 model User {
   id                  String    @id @default(cuid())
   username            String    @unique
@@ -128,10 +141,61 @@ model Lead {
   lastScannedAt         DateTime?
 
   scans                 ScanResult[]
+  analysisRuns          LeadAnalysisRun[]
 
   @@index([searchJobId])
   @@index([totalScore])
   @@index([status])
+}
+
+model LeadAnalysisRun {
+  id                          String              @id @default(cuid())
+  leadId                      String
+  lead                        Lead                @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  status                      LeadAnalysisStatus  @default(pending)
+  preset                      LeadAnalysisPreset
+  maxPages                    Int
+  runTimeoutMs                Int
+  includeBlogAndProductPaths  Boolean             @default(true)
+
+  discoveredCount             Int                 @default(0)
+  scannedCount                Int                 @default(0)
+  summary                     Json?
+  errorMessage                String?
+
+  createdAt                   DateTime            @default(now())
+  startedAt                   DateTime?
+  finishedAt                  DateTime?
+  updatedAt                   DateTime            @updatedAt
+
+  pages                       LeadAnalysisPage[]
+
+  @@index([leadId, createdAt])
+  @@index([status, createdAt])
+}
+
+model LeadAnalysisPage {
+  id                String            @id @default(cuid())
+  runId             String
+  run               LeadAnalysisRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  scannedUrl        String
+  pageType          PageType          @default(other)
+  httpStatus        Int?
+  title             String?
+  metaDescription   String?
+  h1                String?
+  canonical         String?
+  robotsMeta        String?
+  schemaPresent     Boolean           @default(false)
+  indexable         Boolean           @default(true)
+  titleQuality      String?
+  issues            Json?
+  notes             Json?
+  scannedAt         DateTime          @default(now())
+
+  @@index([runId, scannedAt])
 }
 
 model ScanResult {
