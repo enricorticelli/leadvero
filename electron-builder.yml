@@ -1,0 +1,51 @@
+appId: agency.evoluzione.leadvero
+productName: Leadvero
+copyright: Copyright © 2026 Evoluzione Agency
+
+directories:
+  output: release
+
+asar: false
+
+files:
+  - electron/**/*
+  - .next/standalone/**/*
+  - .next/static/**/*
+  - dist/worker.cjs
+  - node_modules/.prisma/client/**/*
+  - "!node_modules/.prisma/client/*-linux*"
+  - node_modules/@prisma/client/**/*
+  - node_modules/@prisma/engines/**/*
+  - "!release/**"
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  icon: build-resources/icon.icns
+  category: public.app-category.productivity
+  files:
+    - "!node_modules/.prisma/client/*-windows*"
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build-resources/icon.ico
+  files:
+    - "!node_modules/.prisma/client/*-darwin*"
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerLanguages: [it, en]
+
+dmg:
+  title: "Installa Leadvero"
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications

@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
   const search = sp.get("search");
   if (search) {
     where.OR = [
-      { companyName: { contains: search, mode: "insensitive" } },
-      { domain: { contains: search, mode: "insensitive" } },
-      { niche: { contains: search, mode: "insensitive" } },
+      { companyName: { contains: search } },
+      { domain: { contains: search } },
+      { niche: { contains: search } },
     ];
   }
 

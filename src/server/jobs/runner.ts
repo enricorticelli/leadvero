@@ -2,11 +2,10 @@ import { prisma } from "../db/prisma";
 import { discover, type DiscoveryInput } from "../discovery";
 import { scanSite } from "../crawl/site-scan";
 import { score } from "../scoring";
-import type { TargetPlatform } from "@prisma/client";
-import { Prisma } from "@prisma/client";
+type TargetPlatform = "shopify" | "wordpress" | "both" | "any";
 
-function toJson(v: unknown): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
+function toJson(v: unknown): string | null {
+  return v == null ? null : JSON.stringify(v);
 }
 
 export async function runSearchJob(jobId: string): Promise<void> {
@@ -116,7 +115,7 @@ export async function runSearchJob(jobId: string): Promise<void> {
           commercialScore: scoreOutput.commercialScore,
           contactabilityScore: scoreOutput.contactabilityScore,
           totalScore: scoreOutput.totalScore,
-          scoreReasons: scoreOutput.scoreReasons,
+          scoreReasons: toJson(scoreOutput.scoreReasons),
         },
         create: {
           searchJobId: jobId,
@@ -150,12 +149,13 @@ export async function runSearchJob(jobId: string): Promise<void> {
           commercialScore: scoreOutput.commercialScore,
           contactabilityScore: scoreOutput.contactabilityScore,
           totalScore: scoreOutput.totalScore,
-          scoreReasons: scoreOutput.scoreReasons,
+          scoreReasons: toJson(scoreOutput.scoreReasons),
           lastScannedAt: new Date(),
         },
       });
 
-      await prisma.scanResult.createMany({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma as any).scanResult.createMany({
         data: scanResult.pages.map((p) => ({
           leadId: lead.id,
           scannedUrl: p.url,

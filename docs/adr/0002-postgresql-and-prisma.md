@@ -1,6 +1,6 @@
 # ADR-0002: Use PostgreSQL with Prisma
 
-- Status: accepted
+- Status: superseded by [ADR-0010](./0010-sqlite-desktop-deployment.md)
 - Date: 2026-04-17
 
 ## Context

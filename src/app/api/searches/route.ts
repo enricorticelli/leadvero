@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/server/db/prisma";
-import { Prisma } from "@prisma/client";
 
 const schema = z.object({
   keyword: z.string().optional().nullable(),
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
     data: {
       ...rest,
       ...(filters != null
-        ? { filters: JSON.parse(JSON.stringify(filters)) as Prisma.InputJsonValue }
+        ? { filters: JSON.stringify(filters) }
         : {}),
     },
   });

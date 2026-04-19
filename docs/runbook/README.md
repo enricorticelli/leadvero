@@ -9,9 +9,7 @@ Examples: deploy, rollback, credential rotation, incident recovery.
 
 - [RB-0001 Bootstrap local development with dev:up](./0001-local-bootstrap-dev-up.md)
 - [RB-0002 Start the stack manually](./0002-manual-local-startup.md)
-- [RB-0003 Deploy to Fly.io (tag push → GitHub Actions)](./0003-deploy-to-fly.md)
-
-<!-- Add entries here as NNNN-slug.md files are created. -->
+- [RB-0003 Build and distribute the macOS desktop app](./0003-build-macos-dmg.md)
 
 ## Open TODOs
 

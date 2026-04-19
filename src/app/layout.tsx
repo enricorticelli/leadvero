@@ -31,9 +31,9 @@ export default async function RootLayout({
         <ConfirmProvider>
           {user ? (
             <>
-              <Sidebar role={user.role} />
+              <Sidebar role={user.role as "admin" | "user"} />
               <div className="flex min-h-screen min-w-0 flex-col md:pl-64">
-                <TopBar user={{ username: user.username, role: user.role }} />
+                <TopBar user={{ username: user.username, role: user.role as "admin" | "user" }} />
                 <main className="flex-1 px-4 pb-24 pt-6 md:px-8 md:pb-10">
                   {children}
                 </main>

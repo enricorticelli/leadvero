@@ -1,108 +1,57 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  binaryTargets = ["native", "darwin", "darwin-arm64"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum JobStatus {
-  pending
-  running
-  done
-  failed
-}
-
-enum TargetPlatform {
-  shopify
-  wordpress
-  both
-  any
-}
-
-enum LeadStatus {
-  new
-  to_contact
-  contacted
-  not_relevant
-  closed
-}
-
-enum UserRole {
-  admin
-  user
-}
-
-enum LeadAnalysisStatus {
-  pending
-  running
-  done
-  failed
-}
-
-enum LeadAnalysisPreset {
-  light
-  standard
-  deep
 }
 
 model User {
   id                  String    @id @default(cuid())
   username            String    @unique
   passwordHash        String
-  role                UserRole  @default(user)
+  role                String    @default("user")
   mustChangePassword  Boolean   @default(false)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   lastLoginAt         DateTime?
 }
 
-enum PageType {
-  home
-  contact
-  about
-  blog_index
-  collection
-  product
-  service
-  other
-}
-
 model SearchJob {
-  id             String         @id @default(cuid())
-  keyword        String?
-  niche          String?
-  country        String
-  city           String?
-  language       String
-  targetPlatform TargetPlatform @default(any)
-  businessType   String?
-  maxResults     Int            @default(30)
-  filters        Json?
-  status         JobStatus      @default(pending)
-  errorMessage   String?
-  discoveredCount Int           @default(0)
-  scannedCount   Int            @default(0)
-  scoredCount    Int            @default(0)
-  createdAt      DateTime       @default(now())
-  startedAt      DateTime?
-  finishedAt     DateTime?
+  id              String   @id @default(cuid())
+  keyword         String?
+  niche           String?
+  country         String
+  city            String?
+  language        String
+  targetPlatform  String   @default("any")
+  businessType    String?
+  maxResults      Int      @default(30)
+  filters         String?
+  status          String   @default("pending")
+  errorMessage    String?
+  discoveredCount Int      @default(0)
+  scannedCount    Int      @default(0)
+  scoredCount     Int      @default(0)
+  createdAt       DateTime @default(now())
+  startedAt       DateTime?
+  finishedAt      DateTime?
 
-  leads          Lead[]
+  leads           Lead[]
 
   @@index([status, createdAt])
 }
 
 model Lead {
-  id                    String      @id @default(cuid())
+  id                    String   @id @default(cuid())
   searchJobId           String
-  searchJob             SearchJob   @relation(fields: [searchJobId], references: [id], onDelete: Cascade)
+  searchJob             SearchJob @relation(fields: [searchJobId], references: [id], onDelete: Cascade)
 
   companyName           String?
   domain                String
-  normalizedDomain      String      @unique
+  normalizedDomain      String   @unique
   sourceUrl             String?
   sourceType            String?
   country               String?
@@ -113,31 +62,31 @@ model Lead {
 
   cms                   String?
   ecommercePlatform     String?
-  hasBlog               Boolean     @default(false)
-  hasContactPage        Boolean     @default(false)
+  hasBlog               Boolean  @default(false)
+  hasContactPage        Boolean  @default(false)
   publicEmail           String?
   publicPhone           String?
-  hasForm               Boolean     @default(false)
-  socialLinks           Json?
+  hasForm               Boolean  @default(false)
+  socialLinks           String?
 
-  seoSignals            Json?
-  analyticsPresent      Boolean     @default(false)
-  tagManagerPresent     Boolean     @default(false)
+  seoSignals            String?
+  analyticsPresent      Boolean  @default(false)
+  tagManagerPresent     Boolean  @default(false)
   performanceEstimate   Int?
-  siteQualityNotes      Json?
+  siteQualityNotes      String?
 
-  fitScore              Int         @default(0)
-  opportunityScore      Int         @default(0)
-  commercialScore       Int         @default(0)
-  contactabilityScore   Int         @default(0)
-  totalScore            Int         @default(0)
-  scoreReasons          Json?
+  fitScore              Int      @default(0)
+  opportunityScore      Int      @default(0)
+  commercialScore       Int      @default(0)
+  contactabilityScore   Int      @default(0)
+  totalScore            Int      @default(0)
+  scoreReasons          String?
 
-  status                LeadStatus  @default(new)
+  status                String   @default("new")
   userNotes             String?
 
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
   lastScannedAt         DateTime?
 
   scans                 ScanResult[]
@@ -149,25 +98,25 @@ model Lead {
 }
 
 model LeadAnalysisRun {
-  id                          String              @id @default(cuid())
+  id                          String   @id @default(cuid())
   leadId                      String
-  lead                        Lead                @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead                        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
-  status                      LeadAnalysisStatus  @default(pending)
-  preset                      LeadAnalysisPreset
+  status                      String   @default("pending")
+  preset                      String
   maxPages                    Int
   runTimeoutMs                Int
-  includeBlogAndProductPaths  Boolean             @default(true)
+  includeBlogAndProductPaths  Boolean  @default(true)
 
-  discoveredCount             Int                 @default(0)
-  scannedCount                Int                 @default(0)
-  summary                     Json?
+  discoveredCount             Int      @default(0)
+  scannedCount                Int      @default(0)
+  summary                     String?
   errorMessage                String?
 
-  createdAt                   DateTime            @default(now())
+  createdAt                   DateTime @default(now())
   startedAt                   DateTime?
   finishedAt                  DateTime?
-  updatedAt                   DateTime            @updatedAt
+  updatedAt                   DateTime @updatedAt
 
   pages                       LeadAnalysisPage[]
 
@@ -176,45 +125,44 @@ model LeadAnalysisRun {
 }
 
 model LeadAnalysisPage {
-  id                String            @id @default(cuid())
+  id                String   @id @default(cuid())
   runId             String
-  run               LeadAnalysisRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  run               LeadAnalysisRun @relation(fields: [runId], references: [id], onDelete: Cascade)
 
   scannedUrl        String
-  pageType          PageType          @default(other)
+  pageType          String   @default("other")
   httpStatus        Int?
   title             String?
   metaDescription   String?
   h1                String?
   canonical         String?
   robotsMeta        String?
-  schemaPresent     Boolean           @default(false)
-  indexable         Boolean           @default(true)
+  schemaPresent     Boolean  @default(false)
+  indexable         Boolean  @default(true)
   titleQuality      String?
-  issues            Json?
-  notes             Json?
-  scannedAt         DateTime          @default(now())
+  issues            String?
+  notes             String?
+  scannedAt         DateTime @default(now())
 
   @@index([runId, scannedAt])
 }
 
 model ScanResult {
-  id               String    @id @default(cuid())
+  id               String   @id @default(cuid())
   leadId           String
-  lead             Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead             Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   scannedUrl       String
-  pageType         PageType  @default(other)
+  pageType         String   @default("other")
   httpStatus       Int?
   title            String?
   metaDescription  String?
   h1               String?
   canonical        String?
   robotsMeta       String?
-  structuredData   Json?
-  notes            Json?
-  scannedAt        DateTime  @default(now())
+  structuredData   String?
+  notes            String?
+  scannedAt        DateTime @default(now())
 
   @@index([leadId])
 }
-

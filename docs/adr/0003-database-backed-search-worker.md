@@ -17,11 +17,14 @@ API requests create jobs quickly and return an identifier instead of waiting for
 Operationally, local development and production-like environments need a separate worker process.
 Progress and failures are tracked on the job record through discovery, scan, and scoring counters.
 
+## Note
+
+The original implementation used `FOR UPDATE SKIP LOCKED` (PostgreSQL-specific). After the migration to SQLite (ADR-0010), both `claimNextSearchJob` and `claimNextLeadAnalysisRun` use an optimistic `findFirst` + `updateMany` pattern instead. This is safe because Leadvero runs a single worker process on a single machine; SQLite serialises writes natively.
+
 ## Evidence
 
 - `prisma/schema.prisma:10-14` defines job lifecycle states.
 - `src/app/api/searches/route.ts:34-41` creates a `SearchJob` and returns `201` with the new id.
-- `src/server/jobs/worker.ts:4` sets a polling interval, and `src/server/jobs/worker.ts:9-15` claims pending work with `FOR UPDATE SKIP LOCKED`.
+- `src/server/jobs/worker.ts:4` sets a polling interval; `src/server/jobs/worker.ts:7-22` claims pending work with `findFirst` + guarded `updateMany`.
 - `src/server/jobs/worker.ts:29` delegates execution to `runSearchJob`.
 - `src/server/jobs/runner.ts:35`, `src/server/jobs/runner.ts:59`, `src/server/jobs/runner.ts:74`, `src/server/jobs/runner.ts:182`, and `src/server/jobs/runner.ts:189-192` show the discover-scan-score-persist pipeline and final job completion updates.
-- `README.md:39`, `README.md:50`, and `README.md:57` describe the background worker behavior in local usage.
