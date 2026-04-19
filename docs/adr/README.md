@@ -12,7 +12,6 @@ This folder stores Architecture Decision Records.
 - [ADR-0005 Use Vitest for server-side unit tests](./0005-vitest-unit-test-strategy.md)
 - [ADR-0006 In-house UI design system with Tailwind + Lucide + Recharts](./0006-ui-design-system-and-component-library.md)
 - [ADR-0007 Cookie-based JWT session auth with role flags](./0007-cookie-jwt-session-auth.md)
-- [ADR-0008 Deploy to Fly.io with web + worker process groups](./0008-fly-io-deployment.md)
 - [ADR-0009 Deep lead analysis via background runs with versioned history](./0009-deep-lead-analysis-background-runs.md)
 
 ## ADR Status Rules
