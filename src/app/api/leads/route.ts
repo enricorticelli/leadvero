@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
         hasBlog: true,
         analyticsPresent: true,
         status: true,
+        userNotes: true,
         scoreReasons: true,
         createdAt: true,
         lastScannedAt: true,

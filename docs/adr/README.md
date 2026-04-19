@@ -10,6 +10,7 @@ This folder stores Architecture Decision Records.
 - [ADR-0003 Run lead discovery asynchronously via a database-backed worker](./0003-database-backed-search-worker.md)
 - [ADR-0004 Integrate SerpAPI for discovery and Anthropic for outreach](./0004-serpapi-and-anthropic-integrations.md)
 - [ADR-0005 Use Vitest for server-side unit tests](./0005-vitest-unit-test-strategy.md)
+- [ADR-0006 In-house UI design system with Tailwind + Lucide + Recharts](./0006-ui-design-system-and-component-library.md)
 
 ## ADR Status Rules
 
