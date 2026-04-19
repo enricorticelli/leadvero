@@ -9,6 +9,8 @@ import {
   SlidersHorizontal,
   X,
   Pencil,
+  Plus,
+  Globe,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -81,6 +83,10 @@ export default function LeadsPage() {
   const [editStatus, setEditStatus] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addUrl, setAddUrl] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
   const activeFilters =
     (search ? 1 : 0) + (minScore ? 1 : 0) + (cms ? 1 : 0) + (hasEmail ? 1 : 0);
   const confirm = useConfirm();
@@ -90,6 +96,32 @@ export default function LeadsPage() {
     setEditing(lead);
     setEditStatus(lead.status);
     setEditNotes(lead.userNotes ?? "");
+  }
+
+  async function submitAdd() {
+    if (!addUrl.trim() || addLoading) return;
+    setAddLoading(true);
+    setAddError(null);
+    try {
+      const res = await fetch("/api/leads/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: addUrl.trim() }),
+      });
+      const data = (await res.json()) as {
+        leadId?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.leadId) {
+        setAddError(data.error ?? "Errore imprevisto");
+        setAddLoading(false);
+        return;
+      }
+      router.push(`/leads/${data.leadId}`);
+    } catch {
+      setAddError("Errore di rete. Riprova.");
+      setAddLoading(false);
+    }
   }
 
   async function saveEdit() {
@@ -169,6 +201,16 @@ export default function LeadsPage() {
             iconLeft={<Download className="h-4 w-4" />}
           >
             Esporta CSV
+          </Button>
+          <Button
+            onClick={() => {
+              setAddUrl("");
+              setAddError(null);
+              setAddOpen(true);
+            }}
+            iconLeft={<Plus className="h-4 w-4" />}
+          >
+            Aggiungi sito
           </Button>
         </div>
       </div>
@@ -424,6 +466,58 @@ export default function LeadsPage() {
               rows={5}
             />
           </Field>
+        </div>
+      </Modal>
+
+      <Modal
+        open={addOpen}
+        onClose={() => (addLoading ? null : setAddOpen(false))}
+        title="Aggiungi sito manualmente"
+        description="Inserisci un URL per analizzarlo e crearne un lead con scoring."
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => setAddOpen(false)}
+              disabled={addLoading}
+            >
+              Annulla
+            </Button>
+            <Button onClick={submitAdd} disabled={addLoading || !addUrl.trim()}>
+              {addLoading ? "Analisi in corso…" : "Analizza e crea"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Field
+            label="URL del sito"
+            hint="Il sito verrà scansionato: SEO, CMS, contatti, qualità. Può richiedere 10–30 secondi."
+          >
+            <div className="relative">
+              <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+              <Input
+                autoFocus
+                value={addUrl}
+                onChange={(e) => {
+                  setAddUrl(e.target.value);
+                  setAddError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitAdd();
+                }}
+                placeholder="https://esempio.it"
+                className="pl-9"
+                disabled={addLoading}
+              />
+            </div>
+          </Field>
+          {addError && (
+            <div className="rounded-lg bg-tile-pink-bg px-3 py-2 text-sm text-tile-pink-icon">
+              {addError}
+            </div>
+          )}
         </div>
       </Modal>
     </div>
