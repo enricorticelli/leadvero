@@ -169,7 +169,6 @@ export async function runSearchJob(jobId: string): Promise<void> {
           structuredData: toJson({ detected: p.structuredData }),
           notes: toJson(p.notes),
         })),
-        skipDuplicates: true,
       });
 
       scored++;

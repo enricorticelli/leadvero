@@ -1,4 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+
+const adapter = new PrismaBetterSqlite3({
+  url: process.env.DATABASE_URL ?? "file:./leadvero.db",
+});
 
 function tryJson(v: string | null | undefined): unknown {
   if (v == null) return null;
@@ -7,6 +12,7 @@ function tryJson(v: string | null | undefined): unknown {
 
 function makePrisma() {
   return new PrismaClient({
+    adapter,
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   }).$extends({
     result: {
@@ -36,14 +42,13 @@ function makePrisma() {
 
 type ExtendedPrisma = ReturnType<typeof makePrisma>;
 
-declare global {
-  // eslint-disable-next-line no-var
-  var prisma: ExtendedPrisma | undefined;
-}
+const globalForPrisma = globalThis as unknown as {
+  __leadveroPrisma?: ExtendedPrisma;
+};
 
 export const prisma: ExtendedPrisma =
-  globalThis.prisma ?? makePrisma();
+  globalForPrisma.__leadveroPrisma ?? makePrisma();
 
 if (process.env.NODE_ENV !== "production") {
-  globalThis.prisma = prisma;
+  globalForPrisma.__leadveroPrisma = prisma;
 }

@@ -3,7 +3,7 @@
  *   npm run dev:up
  *
  * Steps:
- *   1. prisma db push --skip-generate  (create/sync leadvero.db, idempotent)
+ *   1. prisma db push  (create/sync leadvero.db, idempotent)
  *   2. seed if DB is empty
  *   3. spawn: next dev + worker         (in parallel, logs merged)
  */
@@ -12,6 +12,8 @@ import { execSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -56,7 +58,7 @@ async function main() {
   // 1. sync SQLite schema
   step("Syncing database schema (prisma db push)…");
   try {
-    run("npx prisma db push --skip-generate --accept-data-loss");
+    run("npx prisma db push --accept-data-loss");
     ok("Schema synced → leadvero.db");
   } catch {
     fail("prisma db push failed");
@@ -66,8 +68,10 @@ async function main() {
   // 2. seed if empty
   step("Checking if seed is needed…");
   try {
-    const { PrismaClient } = await import("@prisma/client");
-    const prisma = new PrismaClient();
+    const adapter = new PrismaBetterSqlite3({
+      url: process.env.DATABASE_URL ?? "file:./leadvero.db",
+    });
+    const prisma = new PrismaClient({ adapter });
     const count = await prisma.searchJob.count();
     await prisma.$disconnect();
     if (count === 0) {

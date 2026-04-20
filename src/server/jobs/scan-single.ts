@@ -167,7 +167,6 @@ export async function scanSingleUrl(rawUrl: string): Promise<ScanSingleResult> {
         structuredData: toJson({ detected: p.structuredData }),
         notes: toJson(p.notes),
       })),
-      skipDuplicates: true,
     });
 
     return {
